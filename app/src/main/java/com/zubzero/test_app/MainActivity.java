@@ -47,8 +47,8 @@ public class MainActivity extends AppCompatActivity {
         // Initialize the SDK before executing any other operations,
         // especially, if you're using Facebook UI elements.
         initInstances();
-        getUserInfo();
         initCallbackManager();
+        getUserInfo();
     }
 
     private void initInstances() {
@@ -61,8 +61,7 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG).setAction("Action", null).show();
             }
         });
     }
