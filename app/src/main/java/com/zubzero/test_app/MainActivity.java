@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -32,13 +33,16 @@ import org.json.JSONObject;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private CallbackManager callbackManager;
     private LoginButton loginButton;
-    private String keyHash;
+    private String keyHash = "";
     private String TAG = "DEBUG";
+    private List<String> PERMISSIONS = Arrays.asList("public_profile", "email", "user_friends");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,12 +73,14 @@ public class MainActivity extends AppCompatActivity {
     private void initCallbackManager() {
         callbackManager = CallbackManager.Factory.create();
         // read permissions for facebook
-        loginButton.setReadPermissions("email");
+        loginButton.setReadPermissions(PERMISSIONS);
         loginButton.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
             @Override
             public void onSuccess(LoginResult loginResult) {
                 updateUI();
-                getDataFromFacebook(loginResult);
+                DataFacebook dataFacebook = new DataFacebook();
+                dataFacebook.execute(loginResult);
+//                getDataFromFacebook(loginResult);
             }
 
             @Override
@@ -85,30 +91,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onError(FacebookException error) {
                 updateUI();
+                Log.d(TAG, error.toString());
             }
         });
     }
 
     private void getDataFromFacebook(LoginResult loginResult) {
-        GraphRequest request = GraphRequest.newMeRequest(loginResult.getAccessToken(), new GraphRequest.GraphJSONObjectCallback() {
-            @Override
-            public void onCompleted(JSONObject object, GraphResponse response) {
-                // Application code
-                Log.d(TAG, response.toString());
-                String strEmail = null;
-                try {
-                    strEmail = response.getJSONObject().get("email").toString();
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-                Log.d(TAG, strEmail);
-                Toast.makeText(getApplicationContext(), strEmail, Toast.LENGTH_LONG).show();
-            }
-        });
-        Bundle parameters = new Bundle();
-        parameters.putString("fields", "id,name,email,gender");
-        request.setParameters(parameters);
-        request.executeAsync();
+
     }
 
     private void updateUI() {
@@ -176,5 +165,36 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    class DataFacebook extends AsyncTask<LoginResult, Void, JSONObject> {
+
+        @Override
+        protected JSONObject doInBackground(LoginResult... params) {
+            GraphRequest request = GraphRequest.newMeRequest(params[0].getAccessToken(), new GraphRequest.GraphJSONObjectCallback() {
+                @Override
+                public void onCompleted(JSONObject object, GraphResponse response) {
+                    // Application code
+                    Log.d(TAG, response.toString());
+                    String strEmail = null;
+                    try {
+                        strEmail = response.getJSONObject().get("email").toString();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    Log.d(TAG, strEmail);
+                    Toast.makeText(getApplicationContext(), strEmail, Toast.LENGTH_LONG).show();
+                }
+            });
+            Bundle parameters = new Bundle();
+            parameters.putString("fields", "id,name,email,gender");
+            request.setParameters(parameters);
+            return request.executeAndWait().getJSONObject();
+        }
+
+        @Override
+        protected void onPostExecute(JSONObject jsonObject) {
+            super.onPostExecute(jsonObject);
+        }
     }
 }
